@@ -1,0 +1,113 @@
+---
+title: "individual2"
+author: "Felix Baez-Santiago"
+date: "9/26/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#I already installed the packages, if I were to reinstall it gives me errors
+suppressPackageStartupMessages(require(ggplot2))
+suppressPackageStartupMessages(require(dplyr))
+suppressPackageStartupMessages(require(readxl))
+
+library(ggplot2)
+library(dplyr)
+library(readxl)
+library(tidyverse)
+
+Dat <- readxl::read_xls('GSS.xls')
+dat <- readxl::read_xls('GSS.xls') %>%
+  rename(respondentYear = `Gss year for this respondent`, party = `Political party affiliation`, marital = `Marital status`, educ = `Highest year of school completed`, id = `Respondent id number`, sex = `Respondents sex`, ballot = `Ballot used for interview`, happy = `General happiness`)
+
+```
+```
+1. Find the average years of education for the respondents with each political party affiliation. Arrange your output in a meaningful order and print. Describe any patterns you find.
+```
+```{r}
+df <- Dat[!(Dat$`Highest year of school completed`=="Don't know" | Dat$`Highest year of school completed`=="No answer"),]
+df$`Highest year of school completed` <- as.numeric(as.character(df$`Highest year of school completed`))
+
+df %>% 
+  group_by(`Political party affiliation`) %>% 
+  summarize(
+    avgYearsEdu = mean(`Highest year of school completed`, na.rm =TRUE),
+  )
+
+```
+```
+
+```
+```
+2. Create a single data frame containing records for the better educated respondents in each political party affiliation. A “better educated” respondent is someone who has strictly more years of education than the median in the same party affiliation. Print the structure of the data frame.
+```
+```{r}
+demo <- filter(Dat, Dat$'Political party affiliation' == 'Strong democrat')
+repub <- filter(Dat, Dat$'Political party affiliation' == 'Strong republican')
+indep <- filter(Dat, Dat$'Political party affiliation'  == 'Independent')
+
+dem2 <- select(demo, 'Political party affiliation','Highest year of school completed')
+demo <- dem2 %>% top_frac(.85)
+dem3 <- head(demo, n = 14)
+dem3
+
+rep2 <- select(repub, 'Political party affiliation','Highest year of school completed')
+repu <- rep2 %>% top_frac(.85)
+rep3 <- head(repu, n = 14)
+rep3
+
+indep2 <- select(indep, 'Political party affiliation','Highest year of school completed')
+ind <- indep2 %>% top_frac(.85)
+ind3 <- head(ind, n = 14)
+ind3
+
+
+```
+```
+The data in these dataframes shows a similar education amount along political affiliation lines. The average is around 12 to 13 years which essentially means a highschool diploma. It seems accurate because most people finish highschool.
+```
+
+```
+3. How is the happiness of a respondent related to his/her marriage status? Define that a person is happy if the response to question is “Very happy” or “Pretty happy”.
+```
+```{r, dependson = "load", echo = FALSE}
+    ggplot(dat %>% filter(!happy %in% c("Not applicable", "Don't know", "No answer") & marital != "No answer"), aes(happy)) + geom_bar() + facet_wrap(~marital, scales = "free_y") + theme(axis.text.x = element_text(angle = 90, vjust = 0.25, hjust = 1))+ ggtitle("General Happiness vs. Marital Status") + xlab("General happiness") + ylab("Count")
+    dat %>%
+      filter(!happy %in% c("Not applicable", "Don't know", "No answer") & marital != "No answer") %>%
+      group_by(marital) %>%
+      summarize(perc_happy = sum(happy %in% c("Pretty happy", "Very happy")) / length(happy))
+
+```
+
+```
+4. Does party affiliation affect the relationship you found in the last question?
+```
+```{r}
+ggplot(dat %>% filter(!happy %in% c("Not applicable", "Don't know", "No answer") & marital != "No answer" & !party %in% c("No answer", "Don't know")), aes(happy)) + geom_bar() + facet_grid(marital~party, scales = "free_y") + theme(axis.text.x = element_text(angle = 90, vjust = 0.25, hjust = 1)) + ggtitle("General Happiness of Political Party Affiliation vs. Marital Status") + ylab("Count") + xlab("General Happiness")
+    dat %>%
+      filter(!happy %in% c("Not applicable", "Don't know", "No answer") & marital != "No answer" & !party %in% c("No answer", "Don't know")) %>%
+      group_by(marital, party) %>%
+      summarize(perc_happy = sum(happy %in% c("Pretty happy", "Very happy")) / length(happy))
+```
+```
+5. How is marrital status related to the education of a respondent? What are possible reasons accounting for the patterns you see?
+```
+```{r}
+dat %>%
+      group_by(marital) %>%
+      summarize(mean_educ = mean(educ, na.rm=TRUE))
+```
+
+```
+6. Explore two more interesting questions, and answer those questions using the GSS data.
+```
+```{r}
+    ggplot(dat %>% filter(!happy %in% c("Not applicable", "No answer", "Don't know") & !party %in% c("No answer", "Don't know")), aes(happy)) + geom_bar() + facet_grid(party~sex, scales = "free_y")+ ggtitle("General Happiness of Gender vs. Political Party Affiliation") + ylab("Count") + xlab("General Happiness")
+```
+```{r}
+ ggplot(dat %>% filter(!happy %in% c("Not applicable", "No answer", "Don't know") & marital != "No answer"), aes(happy)) + geom_bar() + facet_grid(marital~sex, scales = "free_y") + ggtitle("Gender vs. Marital Status Happiness Levels") + ylab("Count") + xlab("General Happiness")
+```
